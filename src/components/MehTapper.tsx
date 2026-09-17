@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { playTapSound, playExhaustedSound } from '@/lib/sound';
 import { useToast } from './Toast';
@@ -12,20 +12,18 @@ interface FloatingItem {
   y: number;
 }
 
-interface LeaderboardEntry {
+export interface PlayerEntry {
   id: string;
   name: string;
   score: number;
-  tag?: string;
-  isUser?: boolean;
+  wallet?: string;
+  updatedAt?: number;
 }
 
 const STORAGE_KEY_SCORE = 'meh_tap_score';
 const STORAGE_KEY_ENERGY = 'meh_tap_energy';
 const STORAGE_KEY_ENERGY_TIME = 'meh_tap_energy_time';
 const STORAGE_KEY_USERNAME = 'meh_tap_username';
-const STORAGE_KEY_HAS_CUSTOM_NAME = 'meh_tap_has_custom_name';
-const STORAGE_KEY_RIVALS = 'meh_tap_rivals';
 
 const MAX_ENERGY = 500;
 const REGEN_INTERVAL_MS = 2500;
@@ -48,14 +46,6 @@ const phrases = [
   'Legendary Loafer',
 ];
 
-const DEFAULT_RIVALS: LeaderboardEntry[] = [
-  { id: 'r1', name: 'SlothKing_Sol', score: 160, tag: '👑 TOP' },
-  { id: 'r2', name: 'Wojak_Fatigued', score: 110, tag: 'TIRED' },
-  { id: 'r3', name: 'NapMaster', score: 75, tag: 'ZEN' },
-  { id: 'r4', name: 'ChillGuy_Sol', score: 40, tag: 'CHILL' },
-  { id: 'r5', name: 'BoredApe_Exile', score: 15, tag: 'NOOB' },
-];
-
 interface MehTapperProps {
   onOpenWallet: () => void;
   connectedWallet?: string | null;
@@ -65,35 +55,78 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
   const { showToast } = useToast();
   const [score, setScore] = useState(0);
   const [energy, setEnergy] = useState(MAX_ENERGY);
-  const [username, setUsername] = useState('Anon_Sloth');
-  const [hasCustomName, setHasCustomName] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
   const [showNameModal, setShowNameModal] = useState(false);
   const [tempName, setTempName] = useState('');
   const [squish, setSquish] = useState(false);
   const [floatingTexts, setFloatingTexts] = useState<FloatingItem[]>([]);
-  const [rivals, setRivals] = useState<LeaderboardEntry[]>(DEFAULT_RIVALS);
+  const [realPlayers, setRealPlayers] = useState<PlayerEntry[]>([]);
+  const [isLoadingPlayers, setIsLoadingPlayers] = useState(true);
+
   const coinRef = useRef<HTMLDivElement>(null);
   const lastRankRef = useRef<number>(999);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize state from localStorage
+  // Fetch real players from the backend API
+  const fetchLivePlayers = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tapper');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.players)) {
+          setRealPlayers(data.players);
+        }
+      }
+    } catch {
+      // Offline / network fallback
+    } finally {
+      setIsLoadingPlayers(false);
+    }
+  }, []);
+
+  // Sync current user score to the real backend API
+  const syncScoreToServer = useCallback(
+    async (currentName: string, currentScore: number, walletAddress?: string | null) => {
+      try {
+        const res = await fetch('/api/tapper', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: currentName,
+            score: currentScore,
+            wallet: walletAddress || undefined,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.players)) {
+            setRealPlayers(data.players);
+          }
+        }
+      } catch {
+        // Fallback gracefully
+      }
+    },
+    []
+  );
+
+  // Initialize state from localStorage & clean up any stale mock names
   useEffect(() => {
+    // Clear out stale mock names from earlier testing sessions
+    const rawSavedName = localStorage.getItem(STORAGE_KEY_USERNAME);
+    const isMockName =
+      rawSavedName === 'Lazy_TapMaster' ||
+      rawSavedName === 'Anon_Sloth' ||
+      rawSavedName === 'Solana_Loafer';
+
+    if (isMockName) {
+      localStorage.removeItem(STORAGE_KEY_USERNAME);
+    }
+
+    const savedName = !isMockName && rawSavedName ? rawSavedName : null;
     const savedScore = parseInt(localStorage.getItem(STORAGE_KEY_SCORE) || '0', 10);
     let savedEnergy = parseInt(localStorage.getItem(STORAGE_KEY_ENERGY) || String(MAX_ENERGY), 10);
     const lastTime = parseInt(localStorage.getItem(STORAGE_KEY_ENERGY_TIME) || String(Date.now()), 10);
-    const savedName = localStorage.getItem(STORAGE_KEY_USERNAME);
-    const savedHasCustom = localStorage.getItem(STORAGE_KEY_HAS_CUSTOM_NAME) === 'true';
-
-    const savedRivalsJson = localStorage.getItem(STORAGE_KEY_RIVALS);
-    if (savedRivalsJson) {
-      try {
-        const parsed = JSON.parse(savedRivalsJson);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setRivals(parsed);
-        }
-      } catch {
-        // Use default rivals
-      }
-    }
 
     const now = Date.now();
     const elapsed = now - lastTime;
@@ -108,9 +141,15 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
     setEnergy(savedEnergy);
     if (savedName) {
       setUsername(savedName);
-      setHasCustomName(savedHasCustom);
     }
-  }, []);
+
+    // Initial fetch of real players
+    fetchLivePlayers();
+
+    // Poll every 10s for new real players joining
+    const pollInterval = setInterval(fetchLivePlayers, 10000);
+    return () => clearInterval(pollInterval);
+  }, [fetchLivePlayers]);
 
   // Energy regeneration interval
   useEffect(() => {
@@ -129,27 +168,6 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
     return () => clearInterval(interval);
   }, []);
 
-  // Simulated live active community rival activity
-  useEffect(() => {
-    const liveInterval = setInterval(() => {
-      setRivals((prevRivals) => {
-        if (prevRivals.length === 0) return prevRivals;
-        // Randomly pick a rival to gain +1 or +2 points
-        const randIdx = Math.floor(Math.random() * prevRivals.length);
-        const updated = prevRivals.map((item, idx) => {
-          if (idx === randIdx && item.score < 5000) {
-            return { ...item, score: item.score + (Math.random() > 0.5 ? 2 : 1) };
-          }
-          return item;
-        });
-        localStorage.setItem(STORAGE_KEY_RIVALS, JSON.stringify(updated));
-        return updated;
-      });
-    }, 12000);
-
-    return () => clearInterval(liveInterval);
-  }, []);
-
   const getTierName = (s: number) => {
     if (s < 20) return 'Rank: Casual Sloth';
     if (s < 50) return 'Rank: Apathetic Acolyte';
@@ -158,23 +176,27 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
     return 'Rank: 👑 Supreme Whale of Indifference';
   };
 
-  const handleSaveName = (chosenName: string) => {
+  // Register or update username
+  const handleRegisterName = async (chosenName: string) => {
     const trimmed = chosenName.trim();
     if (!trimmed) return;
     const clean = trimmed.slice(0, 20);
+
     setUsername(clean);
-    setHasCustomName(true);
     localStorage.setItem(STORAGE_KEY_USERNAME, clean);
-    localStorage.setItem(STORAGE_KEY_HAS_CUSTOM_NAME, 'true');
     setShowNameModal(false);
-    showToast(`Handle set to "${clean}". You are now live on the leaderboard!`);
+
+    showToast(`Handle registered: "${clean}". You are now on the live leaderboard!`);
     playTapSound();
+
+    // Immediately sync to server
+    await syncScoreToServer(clean, score, connectedWallet);
   };
 
   const handleUseWalletAsName = () => {
     if (!connectedWallet) return;
     const walletHandle = `${connectedWallet.slice(0, 4)}...${connectedWallet.slice(-4)}`;
-    handleSaveName(walletHandle);
+    handleRegisterName(walletHandle);
   };
 
   const spawnFloating = (clientX?: number, clientY?: number, overrideText?: string) => {
@@ -195,12 +217,13 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
   };
 
   const handleTap = (clientX?: number, clientY?: number) => {
-    // If user hasn't chosen a custom handle yet, prompt them to register
-    if (!hasCustomName) {
+    // 1. If user has NOT entered their username, collect it before they can tap!
+    if (!username) {
       setShowNameModal(true);
       return;
     }
 
+    // 2. Check energy
     if (energy <= 0) {
       spawnFloating(clientX, clientY, 'Out of energy. Go take a nap.');
       playExhaustedSound();
@@ -234,27 +257,56 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
     setTimeout(() => setSquish(false), 70);
 
     spawnFloating(clientX, clientY);
+
+    // Debounced sync to server (sends every 1.5s while user taps rapidly)
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+    syncTimeoutRef.current = setTimeout(() => {
+      syncScoreToServer(username, nextScore, connectedWallet);
+    }, 1500);
   };
 
-  // Dynamic live leaderboard with user ranking
-  const fullLeaderboard: (LeaderboardEntry & { rank: number })[] = [
-    ...rivals,
-    {
-      id: 'user',
-      name: username,
-      score: score,
-      tag: 'YOU',
-      isUser: true,
-    },
-  ]
-    .sort((a, b) => b.score - a.score)
-    .map((item, idx) => ({ ...item, rank: idx + 1 }));
+  // Build the live leaderboard from real players only!
+  const combinedLeaderboard = (() => {
+    const list = [...realPlayers];
 
-  const userRankObj = fullLeaderboard.find((x) => x.isUser);
-  const userRank = userRankObj ? userRankObj.rank : fullLeaderboard.length;
+    // If active user is registered, ensure their live local score is reflected
+    if (username) {
+      const idx = list.findIndex(
+        (p) => p.name.toLowerCase() === username.toLowerCase()
+      );
+      if (idx !== -1) {
+        list[idx] = {
+          ...list[idx],
+          score: Math.max(list[idx].score, score),
+          wallet: connectedWallet || list[idx].wallet,
+        };
+      } else {
+        list.push({
+          id: 'current_user',
+          name: username,
+          score: score,
+          wallet: connectedWallet || undefined,
+        });
+      }
+    }
+
+    return list
+      .sort((a, b) => b.score - a.score)
+      .map((item, idx) => ({
+        ...item,
+        rank: idx + 1,
+        isUser: username ? item.name.toLowerCase() === username.toLowerCase() : false,
+      }));
+  })();
+
+  const userRankObj = combinedLeaderboard.find((x) => x.isUser);
+  const userRank = userRankObj ? userRankObj.rank : null;
 
   // Track rank improvements and trigger celebratory toast
   useEffect(() => {
+    if (!userRank) return;
     if (lastRankRef.current === 999) {
       lastRankRef.current = userRank;
       return;
@@ -271,23 +323,21 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
     }
   }, [userRank, score, showToast]);
 
-  // Display top 5 entries plus user if user is further down
-  let displayedList = fullLeaderboard.slice(0, 5);
-  if (userRank > 5 && userRankObj) {
-    displayedList = [...fullLeaderboard.slice(0, 4), userRankObj];
-  }
+  const displayedList = combinedLeaderboard.slice(0, 10);
 
-  const tweetText = `I reached Rank #${userRank} on the $MEH Tap-to-Earn leaderboard with ${score.toLocaleString()} taps as @${username}! @mehc0in #MEH #Solana`;
+  const tweetText = username
+    ? `I reached Rank #${userRank || 1} on the $MEH Tap-to-Earn leaderboard with ${score.toLocaleString()} taps as @${username}! @mehc0in #MEH #Solana`
+    : `I am tapping on the official $MEH memecoin leaderboard! @mehc0in #MEH #Solana`;
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
 
   return (
     <section className="section-tapper" id="tapper">
       <div className="container">
         <div className="section-head">
-          <span className="section-tag">MINI-GAME // TAP-TO-EARN AIRDROP</span>
+          <span className="section-tag">MINI-GAME // REAL TAP-TO-EARN AIRDROP</span>
           <h2 className="section-title">The Meh Tapper</h2>
           <p className="section-subtitle">
-            Enter your handle, tap the official $MEH coin, climb the live leaderboard, and qualify for community airdrop rewards.
+            Enter your handle, tap the official $MEH coin, and climb the live community leaderboard for Fair Launch airdrops.
           </p>
         </div>
 
@@ -301,7 +351,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
 
             <div className="player-meta-group">
               <span className="player-sub-label">LEADERBOARD PROFILE</span>
-              {hasCustomName ? (
+              {username ? (
                 <div className="player-name-display-row">
                   <span className="player-active-name">{username}</span>
                   <button
@@ -323,7 +373,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                    No handle claimed yet
+                    No handle registered yet
                   </span>
                   <button
                     type="button"
@@ -333,7 +383,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
                       setShowNameModal(true);
                     }}
                   >
-                    Set Handle to Start
+                    Enter Username to Play
                   </button>
                 </div>
               )}
@@ -347,7 +397,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
                 <span className="wallet-short-txt">
                   Linked: {connectedWallet.slice(0, 4)}...{connectedWallet.slice(-4)}
                 </span>
-                {!hasCustomName && (
+                {!username && (
                   <button
                     type="button"
                     className="btn-use-wallet-handle"
@@ -373,7 +423,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
 
             <div className="player-live-rank-pill">
               <span className="rank-pill-label">LIVE RANK</span>
-              <strong className="rank-pill-num">#{userRank}</strong>
+              <strong className="rank-pill-num">{userRank ? `#${userRank}` : '—'}</strong>
             </div>
           </div>
         </div>
@@ -430,9 +480,9 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
               </div>
 
               <div className="tap-hint-label">
-                {!hasCustomName ? (
-                  <span style={{ color: 'var(--accent-solana)', fontWeight: '600' }}>
-                    👆 Click to Choose Handle & Start Tapping
+                {!username ? (
+                  <span style={{ color: 'var(--accent-solana)', fontWeight: '700' }}>
+                    👆 Click to Enter Username & Start Tapping
                   </span>
                 ) : (
                   <span>👆 Click or Tap to Earn</span>
@@ -478,19 +528,26 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
               <button
                 type="button"
                 className="btn-tapper-save"
-                onClick={onOpenWallet}
+                onClick={() => {
+                  if (!username) {
+                    setShowNameModal(true);
+                  } else {
+                    syncScoreToServer(username, score, connectedWallet);
+                    showToast('Score saved to live leaderboard!');
+                  }
+                }}
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
                   <polyline points="17 21 17 13 7 13 7 21" />
                   <polyline points="7 3 7 8 15 8" />
                 </svg>
-                <span>{connectedWallet ? 'Score Saved with Wallet' : 'Save Score with Wallet'}</span>
+                <span>Save Score to Leaderboard</span>
               </button>
             </div>
           </div>
 
-          {/* Dynamic Live Leaderboard Sidebar */}
+          {/* Dynamic Real Leaderboard Sidebar */}
           <div className="tapper-sidebar">
             <div className="leaderboard-card">
               <div className="leaderboard-header">
@@ -499,43 +556,57 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
                     <span className="live-pulse-dot"></span>
                     <h3 className="leaderboard-title">Active Tap Masters</h3>
                   </div>
-                  <p className="leaderboard-subtitle">Real-time Hall of Apathy</p>
+                  <p className="leaderboard-subtitle">Real-time Verified Community Ranks</p>
                 </div>
                 <div className="user-live-rank-badge">
                   <span className="user-rank-badge-title">YOUR RANK</span>
-                  <strong className="user-rank-badge-num">#{userRank}</strong>
+                  <strong className="user-rank-badge-num">{userRank ? `#${userRank}` : '—'}</strong>
                 </div>
               </div>
 
-              {/* Dynamic Live Leaderboard List */}
-              <ul className="leaderboard-list">
-                {displayedList.map((entry) => {
-                  let rankClass = '';
-                  if (entry.rank === 1) rankClass = 'gold';
-                  else if (entry.rank === 2) rankClass = 'silver';
-                  else if (entry.rank === 3) rankClass = 'bronze';
+              {/* Dynamic Real Leaderboard List */}
+              {isLoadingPlayers ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '12px' }}>
+                  Loading real leaderboard...
+                </div>
+              ) : combinedLeaderboard.length === 0 ? (
+                <div className="leaderboard-empty-box">
+                  <span className="empty-icon">💤</span>
+                  <h4 className="empty-title">No Active Tappers Yet</h4>
+                  <p className="empty-desc">
+                    Be the first player to start tapping and claim the #1 spot on the live leaderboard!
+                  </p>
+                </div>
+              ) : (
+                <ul className="leaderboard-list">
+                  {displayedList.map((entry) => {
+                    let rankClass = '';
+                    if (entry.rank === 1) rankClass = 'gold';
+                    else if (entry.rank === 2) rankClass = 'silver';
+                    else if (entry.rank === 3) rankClass = 'bronze';
 
-                  return (
-                    <li
-                      key={entry.id}
-                      className={`leaderboard-item ${entry.isUser ? 'user-item active-user' : ''}`}
-                    >
-                      <div className="lb-left">
-                        <span className={`lb-rank ${rankClass}`}>#{entry.rank}</span>
-                        <div className="lb-name-group">
-                          <span className="lb-name">{entry.name}</span>
-                          {entry.tag && (
-                            <span className={`lb-tag ${entry.isUser ? 'user-tag' : ''}`}>
-                              {entry.tag}
-                            </span>
-                          )}
+                    return (
+                      <li
+                        key={entry.id || entry.name}
+                        className={`leaderboard-item ${entry.isUser ? 'user-item active-user' : ''}`}
+                      >
+                        <div className="lb-left">
+                          <span className={`lb-rank ${rankClass}`}>#{entry.rank}</span>
+                          <div className="lb-name-group">
+                            <span className="lb-name">{entry.name}</span>
+                            {entry.isUser && (
+                              <span className="lb-tag user-tag">
+                                YOU
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <span className="lb-score">{entry.score.toLocaleString()} MEH</span>
-                    </li>
-                  );
-                })}
-              </ul>
+                        <span className="lb-score">{entry.score.toLocaleString()} MEH</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
 
               {/* Quick How It Works Guide */}
               <div className="tapper-rules-box">
@@ -548,9 +619,9 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
                   <span>HOW THE GAME WORKS</span>
                 </div>
                 <ul className="rules-list">
-                  <li><strong>1. Enter Handle:</strong> Set your custom name to register on the leaderboard.</li>
-                  <li><strong>2. Tap:</strong> Each tap burns 1 Energy, earns 1 MEH, and climbs the ranks.</li>
-                  <li><strong>3. Rewards:</strong> Link your Solana wallet to record score for Fair Launch airdrops.</li>
+                  <li><strong>1. Enter Username:</strong> Claim your handle before tapping.</li>
+                  <li><strong>2. Real Ranks:</strong> Every tap increases your score and ranks you live.</li>
+                  <li><strong>3. Airdrop Rewards:</strong> Link your Solana wallet to qualify for Fair Launch rewards.</li>
                 </ul>
               </div>
             </div>
@@ -575,7 +646,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
         </div>
       </div>
 
-      {/* Onboarding Handle Modal */}
+      {/* Onboarding Username Modal */}
       {showNameModal && (
         <div
           className="modal-backdrop"
@@ -592,10 +663,10 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
                 <span style={{ fontSize: '26px' }}>🎮</span>
                 <div>
                   <h3 className="modal-title" style={{ fontSize: '18px', marginBottom: '2px' }}>
-                    Choose Your Tap Handle
+                    Enter Your Tap Username
                   </h3>
                   <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                    Rank up on the live $MEH Airdrop Leaderboard
+                    Start tapping & join the real $MEH Leaderboard
                   </p>
                 </div>
               </div>
@@ -612,7 +683,9 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                handleSaveName(tempName || 'Solana_Loafer');
+                if (tempName.trim()) {
+                  handleRegisterName(tempName);
+                }
               }}
               style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
             >
@@ -627,7 +700,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
                     textTransform: 'uppercase',
                   }}
                 >
-                  Player Handle or Twitter Handle
+                  Choose Handle / Twitter Username
                 </label>
                 <input
                   type="text"
@@ -672,12 +745,15 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
               <button
                 type="submit"
                 className="btn-whitelist-submit"
+                disabled={!tempName.trim()}
                 style={{
                   width: '100%',
                   padding: '12px',
                   fontSize: '14px',
                   fontWeight: '700',
                   marginTop: '4px',
+                  opacity: tempName.trim() ? 1 : 0.6,
+                  cursor: tempName.trim() ? 'pointer' : 'not-allowed',
                 }}
               >
                 Start Tapping & Claim Spot
