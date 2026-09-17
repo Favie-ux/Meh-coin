@@ -48,7 +48,7 @@ export default function Footer() {
               </a>
 
               <a
-                href="https://t.me/mehc0insol"
+                href="https://t.me/+YTpPLtaTNAhjNzIx"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="social-icon-btn"

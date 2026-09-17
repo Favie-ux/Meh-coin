@@ -112,7 +112,7 @@ export default function Header({ onOpenWallet, connectedWallet }: HeaderProps) {
             </a>
 
             <a
-              href="https://t.me/mehc0insol"
+              href="https://t.me/+YTpPLtaTNAhjNzIx"
               target="_blank"
               rel="noopener noreferrer"
               className="social-icon-btn desktop-only"
@@ -281,7 +281,7 @@ export default function Header({ onOpenWallet, connectedWallet }: HeaderProps) {
                   </svg>
                 </a>
                 <a
-                  href="https://t.me/mehc0insol"
+                  href="https://t.me/+YTpPLtaTNAhjNzIx"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="social-icon-btn"

@@ -2,12 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { playPronunciationSound, playTapSound } from '@/lib/sound';
+import { playTapSound } from '@/lib/sound';
 import { useToast } from './Toast';
 
 export default function DictionaryHero() {
   const { showToast } = useToast();
-  const [isPronouncing, setIsPronouncing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [themeMode, setThemeMode] = useState<'original' | 'dark'>('original');
 
@@ -64,13 +63,6 @@ export default function DictionaryHero() {
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleAudioPronounce = () => {
-    setIsPronouncing(true);
-    playPronunciationSound();
-    showToast("Pronunciation: /mɛ/ (meh).");
-    setTimeout(() => setIsPronouncing(false), 1200);
-  };
 
   const handleCopyCa = () => {
     const textToCopy = "Launching Friday @ 10:00 AM EST";
@@ -159,61 +151,6 @@ export default function DictionaryHero() {
                     Dark Glass
                   </button>
                 </div>
-              </div>
-            </div>
-
-            {/* Audio Pronunciation & Phonetic Action */}
-            <div className="dict-audio-row">
-              <div className="phonetic-group">
-                <span className="phonetic-label">Phonetic:</span>
-                <span className="phonetic-text">/mɛ/</span>
-                <span className="phonetic-desc">(Interjection / Token)</span>
-              </div>
-
-              <button
-                type="button"
-                className={`dict-audio-btn ${isPronouncing ? 'playing' : ''}`}
-                onClick={handleAudioPronounce}
-                title="Listen to official pronunciation"
-                aria-label="Listen to official pronunciation"
-              >
-                <div className="sound-wave-icon">
-                  <span className="bar bar-1"></span>
-                  <span className="bar bar-2"></span>
-                  <span className="bar bar-3"></span>
-                </div>
-                <span>{isPronouncing ? 'Pronouncing...' : 'Audio /mɛ/'}</span>
-              </button>
-            </div>
-
-            <div className="dict-divider"></div>
-
-            {/* Usage Example */}
-            <div className="dict-examples-block">
-              <span className="dict-example-label">PRACTICAL USAGE:</span>
-              <p className="dict-example-text">
-                &mdash; &ldquo;Did you see the chart just pumped 400%?&rdquo; <br />
-                &mdash; &ldquo;<strong>Meh.</strong>&rdquo;
-              </p>
-            </div>
-
-            {/* Token Meta Grid */}
-            <div className="dict-meta-list">
-              <div className="dict-meta-item">
-                <span className="meta-label">Part of Speech</span>
-                <span className="meta-value">Interjection / Token</span>
-              </div>
-              <div className="dict-meta-item">
-                <span className="meta-label">Native Chain</span>
-                <span className="meta-value text-solana">Solana Mainnet</span>
-              </div>
-              <div className="dict-meta-item">
-                <span className="meta-label">Circulation</span>
-                <span className="meta-value">100% Unlocked</span>
-              </div>
-              <div className="dict-meta-item">
-                <span className="meta-label">Token Utility</span>
-                <span className="meta-value">Community & Rewards</span>
               </div>
             </div>
           </div>
@@ -316,7 +253,7 @@ export default function DictionaryHero() {
               {/* Launch CTAs */}
               <div className="launch-actions">
                 <a
-                  href="https://t.me/mehc0insol"
+                  href="https://t.me/+YTpPLtaTNAhjNzIx"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-launch-action telegram"
