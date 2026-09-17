@@ -4,22 +4,22 @@ import React, { useState, useEffect } from 'react';
 
 const bootLogs = [
   { text: '> Initializing Solana RPC node... [OK]', pct: 20 },
-  { text: '> Querying market enthusiasm... 0% found.', pct: 45 },
-  { text: '> De-escalating crypto hype... Whatever.', pct: 70 },
+  { text: '> Calibrating market noise filter... Active.', pct: 45 },
+  { text: '> Connecting to $MEH decentralized network...', pct: 70 },
   { text: '> Loading dictionary entry: /mɛ/...', pct: 88 },
-  { text: '> Status: Indifference achieved. Ready.', pct: 100 },
+  { text: '> Status: Solana genesis loaded. Ready.', pct: 100 },
 ];
 
 export default function Preloader() {
   const [logs, setLogs] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState('Initializing apathy...');
+  const [status, setStatus] = useState('Initializing $MEH protocol...');
   const [dismissed, setDismissed] = useState(false);
   const [removed, setRemoved] = useState(false);
 
   const handleDismiss = () => {
     setProgress(100);
-    setStatus('100% — Ready (or not)');
+    setStatus('100% — System Ready');
     setTimeout(() => {
       setDismissed(true);
       setTimeout(() => setRemoved(true), 600);
@@ -86,7 +86,7 @@ export default function Preloader() {
             className="preloader-skip-btn"
             onClick={handleDismiss}
           >
-            Skip (Too lazy to wait)
+            Skip Introduction
           </button>
         </div>
       </div>

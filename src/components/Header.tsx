@@ -34,7 +34,7 @@ export default function Header({ onOpenWallet, connectedWallet }: HeaderProps) {
     const next = !sfxOn;
     setSfxOn(next);
     setSfxEnabled(next);
-    showToast(next ? "Sound: On. Don't expect a symphony." : "Sound: Off. Blessed silence.");
+    showToast(next ? "Sound effects enabled." : "Sound effects muted.");
   };
 
   const formatShort = (addr: string) => `${addr.slice(0, 4)}...${addr.slice(-4)}`;

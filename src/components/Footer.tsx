@@ -10,9 +10,8 @@ export default function Footer() {
           <div className="footer-brand">
             <div className="footer-logo">$MEH.</div>
             <div className="footer-disclaimer-card">
-              <strong>DISCLAIMER:</strong> $MEH is a meme coin created for entertainment purposes.
-              No promises, no intrinsic value, no financial advice, and no roadmap to the moon.
-              Crypto is volatile; whatever happens, happens.
+              <strong>DISCLAIMER:</strong> $MEH is a community-driven Solana memecoin created for culture and entertainment.
+              Always do your own research (DYOR). Cryptocurrency trading involves market risk.
             </div>
           </div>
 
@@ -64,8 +63,8 @@ export default function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <span>&copy; 2026 $MEH. All rights reserved, or not. We don&apos;t really mind.</span>
-          <span>Built on Solana • Certified 0% Effort</span>
+          <span>&copy; 2026 $MEH. All rights reserved. The official Solana coin of pure chill.</span>
+          <span>Built on Solana • 100% Community Driven</span>
         </div>
       </div>
     </footer>

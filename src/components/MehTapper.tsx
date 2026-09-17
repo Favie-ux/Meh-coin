@@ -35,15 +35,15 @@ const phrases = [
   'Tap tap',
   '🥱',
   'Keep tapping',
-  'Apathy King',
-  'Sloth power',
-  'Down bad',
-  'Touch grass',
+  'Unbothered',
+  'Chill vibes',
+  'Diamond Hands',
+  'Zen Master',
   'Good effort',
   'Stay unbothered',
   'Airdrop loading...',
-  'Apathy lvl 100',
-  'Legendary Loafer',
+  'Chill lvl 100',
+  'Legendary Tapper',
 ];
 
 interface MehTapperProps {
@@ -225,9 +225,9 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
 
     // 2. Check energy
     if (energy <= 0) {
-      spawnFloating(clientX, clientY, 'Out of energy. Go take a nap.');
+      spawnFloating(clientX, clientY, 'Energy depleted. Recharging...');
       playExhaustedSound();
-      showToast('Out of energy. Recharging automatically... Relax.');
+      showToast('Energy depleted. Auto-recharging in progress!');
       return;
     }
 
@@ -490,14 +490,14 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
               </div>
             </div>
 
-            {/* Apathy Energy Bar */}
+            {/* Tap Energy Bar */}
             <div className="energy-bar-wrap">
               <div className="energy-meta">
                 <span className="energy-label">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                   </svg>
-                  Apathy Energy (Auto-recharges +1 / 2.5s)
+                  Tap Energy (Auto-recharges +1 / 2.5s)
                 </span>
                 <span id="energyVal" className="energy-val">
                   {energy}/{MAX_ENERGY}
@@ -626,9 +626,9 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
               </div>
             </div>
 
-            {/* Meme Quote Box */}
+            {/* Community Quote Box */}
             <div className="lazy-quote-box">
-              &quot;I could have learned a new programming language or studied high finance. Instead I clicked a coin 4,000 times that says &apos;Meh&apos;.&quot;
+              &quot;While everyone else is stressed staring at 1-minute candle charts, we are tapping $MEH in total peace.&quot;
               <br />
               <br />
               <strong
@@ -639,7 +639,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
                   fontSize: '11px',
                 }}
               >
-                — Anonymous Solana Degenerate
+                — Unbothered Solana Community Member
               </strong>
             </div>
           </div>

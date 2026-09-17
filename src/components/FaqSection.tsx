@@ -14,8 +14,8 @@ const faqs: FaqItem[] = [
   {
     id: 'faq-1',
     q: 'What is $MEH?',
-    a: 'In a crypto landscape drenched in fake roadmaps, over-leveraged influencers, and 24/7 screeching hype, $MEH is the antidote. It is a Solana memecoin inspired by the universal expression of indifference. We don’t care if Bitcoin is at $100k or $10k. Whatever happens, happens.',
-    highlight: 'Standard definition: Indifference; to be used when one simply does not care.',
+    a: 'In a crypto landscape drenched in fake roadmaps, over-leveraged influencers, and 24/7 screeching hype, $MEH is the antidote. It is a Solana memecoin inspired by the universal expression of indifference. We focus on real community culture, organic virality, and stress-free holding.',
+    highlight: 'Official Definition: Unshakable chill; immune to panic and market noise.',
   },
   {
     id: 'faq-2',
@@ -38,14 +38,14 @@ const faqs: FaqItem[] = [
   {
     id: 'faq-5',
     q: 'What are the taxes and tokenomics?',
-    a: 'Total supply is 1,000,000,000 $MEH. Mint authority is revoked forever. Liquidity pool (LP) tokens are 100% burned. Tax is 0% on buys and 0% on sells. Calculating tax formulas takes too much effort, so we banned them.',
+    a: 'Total supply is 1,000,000,000 $MEH. Mint authority is revoked forever. Liquidity pool (LP) tokens are 100% burned. Tax is 0% on buys and 0% on sells. No hidden taxes, no transfer fees, and 0% slippage friction.',
     highlight: '0% Buy Tax • 0% Sell Tax • 100% Burned LP',
   },
   {
     id: 'faq-6',
-    q: 'Will $MEH make me a millionaire?',
-    a: 'We make absolutely zero financial promises, zero guarantees of utility, and zero claims of solving the global economy. This is a memecoin built for laughs and community apathy. Never risk funds you cannot afford to lose. Whatever happens, happens.',
-    highlight: 'Rule #1: Stay unbothered.',
+    q: 'What is the vision and roadmap for $MEH?',
+    a: '$MEH is designed to be the defining cultural memecoin of the Solana ecosystem. Our focus is on fair community distribution, viral creative campaigns, decentralized exchange listings, and rewarding our top tap-game participants and diamond-hand community members.',
+    highlight: 'Community-first growth • Global memetic culture',
   },
 ];
 
@@ -61,10 +61,10 @@ export default function FaqSection() {
     <section className="section-faq" id="faq">
       <div className="container">
         <div className="section-head">
-          <span className="section-tag">COMMUNITY // FREQUENTLY AVOIDED QUESTIONS</span>
+          <span className="section-tag">COMMUNITY // FREQUENTLY ASKED QUESTIONS</span>
           <h2 className="section-title">Why $MEH?</h2>
           <p className="section-subtitle">
-            Answers to questions you probably shouldn’t care about, but asked anyway.
+            Everything you need to know about the $MEH fair launch, tokenomics, and community.
           </p>
         </div>
 

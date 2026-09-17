@@ -73,9 +73,9 @@ export default function SidewaysChart() {
       ctx.font = '10px "JetBrains Mono", monospace';
       ctx.fillStyle = '#71717a';
       ctx.textAlign = 'left';
-      ctx.fillText('RESISTANCE: Too much effort', padL + 10, padT + 14);
-      ctx.fillText('SUPPORT: Rock bottom (Comfy)', padL + 10, padT + chartH - 10);
-      ctx.fillText('TREND: Chronic Sideways (0.00%)', padL + 10, padT + chartH / 2 - 6);
+      ctx.fillText('RESISTANCE: Zero Selling Pressure', padL + 10, padT + 14);
+      ctx.fillText('SUPPORT: Unshakable Diamond Base', padL + 10, padT + chartH - 10);
+      ctx.fillText('TREND: Pure Chill Equilibrium', padL + 10, padT + chartH / 2 - 6);
 
       // Line Chart
       ctx.beginPath();
@@ -139,7 +139,7 @@ export default function SidewaysChart() {
         ctx.font = '10px "JetBrains Mono", monospace';
         ctx.fillText('Action: Hold & Relax', ttX + 10, ttY + 18);
         ctx.fillStyle = '#71717a';
-        ctx.fillText('Volatility: 0.00% (Dead)', ttX + 10, ttY + 34);
+        ctx.fillText('Volatility: 0.00% (Zen Equilibrium)', ttX + 10, ttY + 34);
       }
     }
 
@@ -174,7 +174,7 @@ export default function SidewaysChart() {
         <div className="chart-header">
           <div className="chart-title-wrap">
             <h3>Technical Analysis: The Crabbing Index</h3>
-            <p>Real-time simulated chart of chronic market indifference</p>
+            <p>Real-time simulated index of stress-free diamond hands</p>
           </div>
           <div className="chart-stats-row">
             <div className="chart-stat-item">

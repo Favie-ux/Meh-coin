@@ -15,21 +15,21 @@ const tokensData = [
     badge: '0% TAX',
     val: '0% / 0%',
     label: 'Buy & Sell Tax',
-    desc: 'Zero tax on buys, zero tax on sells. Who even has the time or energy to calculate token taxes?',
+    desc: 'Zero tax on buys, zero tax on sells. Seamless swaps with 0% friction and no hidden deductions.',
   },
   {
     icon: '🔥',
     badge: 'SECURITY',
     val: '100%',
     label: 'LP Burned & Locked',
-    desc: 'Liquidity pool tokens sent straight to the incinerator. Rugging requires effort, and we don’t have it.',
+    desc: 'Liquidity pool tokens permanently burned to the incinerator address. 100% decentralized, immutable, and safe.',
   },
   {
-    icon: '💤',
-    badge: 'REALITY',
-    val: '0.00%',
-    label: 'Promised Utility',
-    desc: 'Absolutely zero promises. No artificial metaverse, no AI toaster buzzwords. Just pure, unadulterated vibe.',
+    icon: '⚡',
+    badge: 'FAIR LAUNCH',
+    val: '100%',
+    label: 'Community Owned',
+    desc: '100% community allocated. No private presales, no predatory insider allocations, and no unfair VC unlock schedules.',
   },
 ];
 

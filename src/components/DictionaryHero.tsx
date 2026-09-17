@@ -68,7 +68,7 @@ export default function DictionaryHero() {
   const handleAudioPronounce = () => {
     setIsPronouncing(true);
     playPronunciationSound();
-    showToast("Pronunciation: /mɛ/. You're welcome.");
+    showToast("Pronunciation: /mɛ/ (meh).");
     setTimeout(() => setIsPronouncing(false), 1200);
   };
 
@@ -77,15 +77,15 @@ export default function DictionaryHero() {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(textToCopy).then(() => {
         setIsCopied(true);
-        showToast("Copied CA status to clipboard. Or whatever.");
+        showToast("Copied launch details to clipboard!");
         playTapSound();
         setTimeout(() => setIsCopied(false), 2000);
       }).catch(() => {
-        showToast("Clipboard copy failed. Classic.");
+        showToast("Could not copy to clipboard. Please try again.");
       });
     } else {
       setIsCopied(true);
-      showToast("Copied CA status to clipboard. Or whatever.");
+      showToast("Copied launch details to clipboard!");
       setTimeout(() => setIsCopied(false), 2000);
     }
   };
@@ -208,12 +208,12 @@ export default function DictionaryHero() {
                 <span className="meta-value text-solana">Solana Mainnet</span>
               </div>
               <div className="dict-meta-item">
-                <span className="meta-label">Hype Index</span>
-                <span className="meta-value">0.00% (Absolute Zero)</span>
+                <span className="meta-label">Circulation</span>
+                <span className="meta-value">100% Unlocked</span>
               </div>
               <div className="dict-meta-item">
-                <span className="meta-label">Max Promises</span>
-                <span className="meta-value">None Expected</span>
+                <span className="meta-label">Token Utility</span>
+                <span className="meta-value">Community & Rewards</span>
               </div>
             </div>
           </div>
@@ -239,12 +239,12 @@ export default function DictionaryHero() {
 
               <p className="manifesto-core-text">
                 <span className="manifesto-punchline">Meh.</span>
-                We got tired of the screaming. So we created a coin for everyone who just… doesn’t care.
-                Market pumping? <em>Meh.</em> Market dumping? <em>Meh.</em> Influencers screaming we’re going to zero? <em>Meh.</em>
+                We got tired of the screaming. So we created a coin for everyone who embraces true unbothered chill.
+                Market pumping? <em>Meh.</em> Market dumping? <em>Meh.</em> Over-leveraged noise? <em>Meh.</em>
               </p>
               
               <p className="manifesto-sub-text">
-                No fake roadmaps. No pretending to cure world hunger on the blockchain. Just a silly coin, a community that refuses to sweat, and one simple rule:
+                No fake promises. No pretending to cure world hunger on the blockchain. Just pure unbothered crypto energy, a community that refuses to panic, and one simple rule:
               </p>
 
               <div className="manifesto-highlight">

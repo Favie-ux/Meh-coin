@@ -4,16 +4,16 @@ import { ToastProvider } from '@/components/Toast';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://mehcoin.xyz'),
-  title: "$MEH — The Solana Memecoin for People Who Don't Care",
+  title: "$MEH — Official Solana Memecoin | The Token of Pure Chill",
   description:
-    "Crypto is always screaming. We got tired of the hype. $MEH is the Solana memecoin for everyone who just doesn't care. Whatever happens, happens.",
+    "The official $MEH Solana memecoin. 100% fair launch, zero buy/sell taxes, burned LP, and live tap-to-earn community airdrop. Unbothered crypto culture on Solana.",
   icons: {
     icon: '/assets/favicon.svg',
   },
   openGraph: {
     type: 'website',
-    title: '$MEH — Whatever happens, happens.',
-    description: 'Indifference; to be used when one simply does not care. Official fair launch on Solana.',
+    title: '$MEH — Official Solana Memecoin',
+    description: '100% Fair Launch on Solana. 0% Tax, LP Burned, Live Tap-to-Earn Rewards.',
     images: ['/assets/meh-token-image.png'],
   },
   twitter: {

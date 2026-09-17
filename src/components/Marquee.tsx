@@ -10,7 +10,7 @@ export default function Marquee() {
           $MEH <span className="marquee-separator"></span> WHATEVER HAPPENS, HAPPENS{' '}
           <span className="marquee-separator"></span> 0% TAX{' '}
           <span className="marquee-separator"></span> 1 BILLION SUPPLY{' '}
-          <span className="marquee-separator"></span> ZERO PROMISES{' '}
+          <span className="marquee-separator"></span> 100% COMMUNITY DRIVEN{' '}
           <span className="marquee-separator"></span> LAUNCHING FRIDAY 10AM EST{' '}
           <span className="marquee-separator"></span> MEH{' '}
           <span className="marquee-separator"></span>
@@ -19,7 +19,7 @@ export default function Marquee() {
           $MEH <span className="marquee-separator"></span> WHATEVER HAPPENS, HAPPENS{' '}
           <span className="marquee-separator"></span> 0% TAX{' '}
           <span className="marquee-separator"></span> 1 BILLION SUPPLY{' '}
-          <span className="marquee-separator"></span> ZERO PROMISES{' '}
+          <span className="marquee-separator"></span> 100% COMMUNITY DRIVEN{' '}
           <span className="marquee-separator"></span> LAUNCHING FRIDAY 10AM EST{' '}
           <span className="marquee-separator"></span> MEH{' '}
           <span className="marquee-separator"></span>

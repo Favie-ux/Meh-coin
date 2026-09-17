@@ -65,7 +65,7 @@ export default function WalletModal({
 
   const handleDisconnect = () => {
     onDisconnect();
-    showToast('Wallet disconnected. Who cares anyway.');
+    showToast('Wallet disconnected successfully.');
     onClose();
   };
 
