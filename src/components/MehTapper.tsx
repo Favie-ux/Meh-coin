@@ -24,6 +24,8 @@ const STORAGE_KEY_SCORE = 'meh_tap_score';
 const STORAGE_KEY_ENERGY = 'meh_tap_energy';
 const STORAGE_KEY_ENERGY_TIME = 'meh_tap_energy_time';
 const STORAGE_KEY_USERNAME = 'meh_tap_username';
+const STORAGE_KEY_HAS_CUSTOM_NAME = 'meh_tap_has_custom_name';
+const STORAGE_KEY_RIVALS = 'meh_tap_rivals';
 
 const MAX_ENERGY = 500;
 const REGEN_INTERVAL_MS = 2500;
@@ -46,15 +48,12 @@ const phrases = [
   'Legendary Loafer',
 ];
 
-const INITIAL_RIVALS: LeaderboardEntry[] = [
-  { id: 'r1', name: '0xSloth...9b4', score: 142890, tag: '👑 WHALE' },
-  { id: 'r2', name: 'Wojak_Fatigued', score: 89420, tag: 'TIRED' },
-  { id: 'r3', name: 'Procrastinator_Sol', score: 64210, tag: 'ZEN' },
-  { id: 'r4', name: 'NapEnthusiast', score: 41005, tag: 'CHILL' },
-  { id: 'r5', name: 'CouchPotato_99', score: 12500, tag: 'IDLE' },
-  { id: 'r6', name: 'BoredApe_Exile', score: 2500, tag: 'APATHIST' },
-  { id: 'r7', name: 'SleepySol', score: 150, tag: 'NOOB' },
-  { id: 'r8', name: 'DoNothing_Degen', score: 25, tag: 'ZERO EFFORT' },
+const DEFAULT_RIVALS: LeaderboardEntry[] = [
+  { id: 'r1', name: 'SlothKing_Sol', score: 160, tag: '👑 TOP' },
+  { id: 'r2', name: 'Wojak_Fatigued', score: 110, tag: 'TIRED' },
+  { id: 'r3', name: 'NapMaster', score: 75, tag: 'ZEN' },
+  { id: 'r4', name: 'ChillGuy_Sol', score: 40, tag: 'CHILL' },
+  { id: 'r5', name: 'BoredApe_Exile', score: 15, tag: 'NOOB' },
 ];
 
 interface MehTapperProps {
@@ -66,13 +65,15 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
   const { showToast } = useToast();
   const [score, setScore] = useState(0);
   const [energy, setEnergy] = useState(MAX_ENERGY);
-  const [username, setUsername] = useState('Lazy_TapMaster');
+  const [username, setUsername] = useState('Anon_Sloth');
   const [hasCustomName, setHasCustomName] = useState(false);
-  const [editingName, setEditingName] = useState(false);
+  const [showNameModal, setShowNameModal] = useState(false);
   const [tempName, setTempName] = useState('');
   const [squish, setSquish] = useState(false);
   const [floatingTexts, setFloatingTexts] = useState<FloatingItem[]>([]);
+  const [rivals, setRivals] = useState<LeaderboardEntry[]>(DEFAULT_RIVALS);
   const coinRef = useRef<HTMLDivElement>(null);
+  const lastRankRef = useRef<number>(999);
 
   // Initialize state from localStorage
   useEffect(() => {
@@ -80,6 +81,19 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
     let savedEnergy = parseInt(localStorage.getItem(STORAGE_KEY_ENERGY) || String(MAX_ENERGY), 10);
     const lastTime = parseInt(localStorage.getItem(STORAGE_KEY_ENERGY_TIME) || String(Date.now()), 10);
     const savedName = localStorage.getItem(STORAGE_KEY_USERNAME);
+    const savedHasCustom = localStorage.getItem(STORAGE_KEY_HAS_CUSTOM_NAME) === 'true';
+
+    const savedRivalsJson = localStorage.getItem(STORAGE_KEY_RIVALS);
+    if (savedRivalsJson) {
+      try {
+        const parsed = JSON.parse(savedRivalsJson);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setRivals(parsed);
+        }
+      } catch {
+        // Use default rivals
+      }
+    }
 
     const now = Date.now();
     const elapsed = now - lastTime;
@@ -94,7 +108,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
     setEnergy(savedEnergy);
     if (savedName) {
       setUsername(savedName);
-      setHasCustomName(true);
+      setHasCustomName(savedHasCustom);
     }
   }, []);
 
@@ -115,36 +129,52 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
     return () => clearInterval(interval);
   }, []);
 
+  // Simulated live active community rival activity
+  useEffect(() => {
+    const liveInterval = setInterval(() => {
+      setRivals((prevRivals) => {
+        if (prevRivals.length === 0) return prevRivals;
+        // Randomly pick a rival to gain +1 or +2 points
+        const randIdx = Math.floor(Math.random() * prevRivals.length);
+        const updated = prevRivals.map((item, idx) => {
+          if (idx === randIdx && item.score < 5000) {
+            return { ...item, score: item.score + (Math.random() > 0.5 ? 2 : 1) };
+          }
+          return item;
+        });
+        localStorage.setItem(STORAGE_KEY_RIVALS, JSON.stringify(updated));
+        return updated;
+      });
+    }, 12000);
+
+    return () => clearInterval(liveInterval);
+  }, []);
+
   const getTierName = (s: number) => {
-    if (s < 50) return 'Rank: Casual Sloth';
-    if (s < 200) return 'Rank: Apathetic Acolyte';
-    if (s < 1000) return 'Rank: Certified Loafer';
-    if (s < 5000) return 'Rank: Grand Procrastinator';
-    return 'Rank: Transcendentally Unbothered';
+    if (s < 20) return 'Rank: Casual Sloth';
+    if (s < 50) return 'Rank: Apathetic Acolyte';
+    if (s < 100) return 'Rank: Certified Loafer';
+    if (s < 200) return 'Rank: Grand Procrastinator';
+    return 'Rank: 👑 Supreme Whale of Indifference';
   };
 
-  const handleSaveName = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = tempName.trim();
-    if (!trimmed) {
-      setEditingName(false);
-      return;
-    }
+  const handleSaveName = (chosenName: string) => {
+    const trimmed = chosenName.trim();
+    if (!trimmed) return;
     const clean = trimmed.slice(0, 20);
     setUsername(clean);
     setHasCustomName(true);
     localStorage.setItem(STORAGE_KEY_USERNAME, clean);
-    setEditingName(false);
-    showToast(`Leaderboard handle set to "${clean}". Whatever.`);
+    localStorage.setItem(STORAGE_KEY_HAS_CUSTOM_NAME, 'true');
+    setShowNameModal(false);
+    showToast(`Handle set to "${clean}". You are now live on the leaderboard!`);
+    playTapSound();
   };
 
   const handleUseWalletAsName = () => {
     if (!connectedWallet) return;
     const walletHandle = `${connectedWallet.slice(0, 4)}...${connectedWallet.slice(-4)}`;
-    setUsername(walletHandle);
-    setHasCustomName(true);
-    localStorage.setItem(STORAGE_KEY_USERNAME, walletHandle);
-    showToast(`Handle updated to wallet ${walletHandle}`);
+    handleSaveName(walletHandle);
   };
 
   const spawnFloating = (clientX?: number, clientY?: number, overrideText?: string) => {
@@ -165,10 +195,16 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
   };
 
   const handleTap = (clientX?: number, clientY?: number) => {
+    // If user hasn't chosen a custom handle yet, prompt them to register
+    if (!hasCustomName) {
+      setShowNameModal(true);
+      return;
+    }
+
     if (energy <= 0) {
       spawnFloating(clientX, clientY, 'Out of energy. Go take a nap.');
       playExhaustedSound();
-      showToast("Out of energy. Cooldown running. Relax.");
+      showToast('Out of energy. Recharging automatically... Relax.');
       return;
     }
 
@@ -202,7 +238,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
 
   // Dynamic live leaderboard with user ranking
   const fullLeaderboard: (LeaderboardEntry & { rank: number })[] = [
-    ...INITIAL_RIVALS,
+    ...rivals,
     {
       id: 'user',
       name: username,
@@ -217,10 +253,28 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
   const userRankObj = fullLeaderboard.find((x) => x.isUser);
   const userRank = userRankObj ? userRankObj.rank : fullLeaderboard.length;
 
-  // Display top 6 entries plus user if user is further down
-  let displayedList = fullLeaderboard.slice(0, 6);
-  if (userRank > 6 && userRankObj) {
-    displayedList = [...fullLeaderboard.slice(0, 5), userRankObj];
+  // Track rank improvements and trigger celebratory toast
+  useEffect(() => {
+    if (lastRankRef.current === 999) {
+      lastRankRef.current = userRank;
+      return;
+    }
+    if (userRank < lastRankRef.current && score > 0) {
+      if (userRank === 1) {
+        showToast('👑 YOU ARE NOW RANK #1 ON THE $MEH LEADERBOARD!');
+      } else if (userRank <= 3) {
+        showToast(`🥉 Top 3 Podium reached! You are now Rank #${userRank}!`);
+      } else {
+        showToast(`🎉 Rank Up! You climbed to Rank #${userRank}!`);
+      }
+      lastRankRef.current = userRank;
+    }
+  }, [userRank, score, showToast]);
+
+  // Display top 5 entries plus user if user is further down
+  let displayedList = fullLeaderboard.slice(0, 5);
+  if (userRank > 5 && userRankObj) {
+    displayedList = [...fullLeaderboard.slice(0, 4), userRankObj];
   }
 
   const tweetText = `I reached Rank #${userRank} on the $MEH Tap-to-Earn leaderboard with ${score.toLocaleString()} taps as @${username}! @mehc0in #MEH #Solana`;
@@ -233,7 +287,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
           <span className="section-tag">MINI-GAME // TAP-TO-EARN AIRDROP</span>
           <h2 className="section-title">The Meh Tapper</h2>
           <p className="section-subtitle">
-            Tap the official $MEH coin to earn points, climb the live leaderboard, and boost your community airdrop eligibility.
+            Enter your handle, tap the official $MEH coin, climb the live leaderboard, and qualify for community airdrop rewards.
           </p>
         </div>
 
@@ -247,31 +301,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
 
             <div className="player-meta-group">
               <span className="player-sub-label">LEADERBOARD PROFILE</span>
-              {editingName || !hasCustomName ? (
-                <form className="nickname-quick-form" onSubmit={handleSaveName}>
-                  <input
-                    type="text"
-                    className="nickname-quick-input"
-                    placeholder="Enter your handle (e.g. @SolanaSloth)..."
-                    value={tempName}
-                    onChange={(e) => setTempName(e.target.value)}
-                    maxLength={20}
-                    autoFocus={editingName}
-                  />
-                  <button type="submit" className="btn-quick-save">
-                    {hasCustomName ? 'Update' : 'Claim Handle'}
-                  </button>
-                  {hasCustomName && (
-                    <button
-                      type="button"
-                      className="btn-quick-cancel"
-                      onClick={() => setEditingName(false)}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </form>
-              ) : (
+              {hasCustomName ? (
                 <div className="player-name-display-row">
                   <span className="player-active-name">{username}</span>
                   <button
@@ -279,7 +309,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
                     className="btn-inline-edit"
                     onClick={() => {
                       setTempName(username);
-                      setEditingName(true);
+                      setShowNameModal(true);
                     }}
                     title="Change handle"
                   >
@@ -288,6 +318,22 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
                     <span>Change</span>
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                    No handle claimed yet
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-quick-save"
+                    onClick={() => {
+                      setTempName('');
+                      setShowNameModal(true);
+                    }}
+                  >
+                    Set Handle to Start
                   </button>
                 </div>
               )}
@@ -384,7 +430,13 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
               </div>
 
               <div className="tap-hint-label">
-                <span>👆 Click or Tap to Earn</span>
+                {!hasCustomName ? (
+                  <span style={{ color: 'var(--accent-solana)', fontWeight: '600' }}>
+                    👆 Click to Choose Handle & Start Tapping
+                  </span>
+                ) : (
+                  <span>👆 Click or Tap to Earn</span>
+                )}
               </div>
             </div>
 
@@ -445,13 +497,13 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
                 <div>
                   <div className="lb-title-wrap">
                     <span className="live-pulse-dot"></span>
-                    <h3 className="leaderboard-title">Laziest Tap Masters</h3>
+                    <h3 className="leaderboard-title">Active Tap Masters</h3>
                   </div>
                   <p className="leaderboard-subtitle">Real-time Hall of Apathy</p>
                 </div>
                 <div className="user-live-rank-badge">
-                  <span>YOUR RANK</span>
-                  <strong>#{userRank}</strong>
+                  <span className="user-rank-badge-title">YOUR RANK</span>
+                  <strong className="user-rank-badge-num">#{userRank}</strong>
                 </div>
               </div>
 
@@ -496,9 +548,9 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
                   <span>HOW THE GAME WORKS</span>
                 </div>
                 <ul className="rules-list">
-                  <li><strong>1. Tap:</strong> Each tap burns 1 Apathy Energy and earns 1 MEH point.</li>
-                  <li><strong>2. Rank:</strong> Set your handle in the player bar to climb the live leaderboard.</li>
-                  <li><strong>3. Reward:</strong> Connect your Solana wallet to link score for fair launch airdrop.</li>
+                  <li><strong>1. Enter Handle:</strong> Set your custom name to register on the leaderboard.</li>
+                  <li><strong>2. Tap:</strong> Each tap burns 1 Energy, earns 1 MEH, and climbs the ranks.</li>
+                  <li><strong>3. Rewards:</strong> Link your Solana wallet to record score for Fair Launch airdrops.</li>
                 </ul>
               </div>
             </div>
@@ -522,6 +574,118 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
           </div>
         </div>
       </div>
+
+      {/* Onboarding Handle Modal */}
+      {showNameModal && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setShowNameModal(false)}
+          style={{ zIndex: 1000 }}
+        >
+          <div
+            className="wallet-modal-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '420px' }}
+          >
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '26px' }}>🎮</span>
+                <div>
+                  <h3 className="modal-title" style={{ fontSize: '18px', marginBottom: '2px' }}>
+                    Choose Your Tap Handle
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    Rank up on the live $MEH Airdrop Leaderboard
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-close-modal"
+                onClick={() => setShowNameModal(false)}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSaveName(tempName || 'Solana_Loafer');
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+            >
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: '11px',
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--text-secondary)',
+                    marginBottom: '6px',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Player Handle or Twitter Handle
+                </label>
+                <input
+                  type="text"
+                  className="nickname-quick-input"
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    fontSize: '14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-glass-hover)',
+                    background: 'rgba(255,255,255,0.04)',
+                    color: '#fff',
+                    outline: 'none',
+                  }}
+                  placeholder="e.g. @SolanaChad or SlothKing"
+                  value={tempName}
+                  onChange={(e) => setTempName(e.target.value)}
+                  maxLength={20}
+                  autoFocus
+                />
+              </div>
+
+              {connectedWallet && (
+                <button
+                  type="button"
+                  className="btn-autofill-wallet"
+                  style={{
+                    width: '100%',
+                    justifyContent: 'center',
+                    padding: '10px',
+                    fontSize: '12px',
+                  }}
+                  onClick={() => {
+                    const h = `${connectedWallet.slice(0, 4)}...${connectedWallet.slice(-4)}`;
+                    setTempName(h);
+                  }}
+                >
+                  Use Connected Wallet ({connectedWallet.slice(0, 4)}...{connectedWallet.slice(-4)})
+                </button>
+              )}
+
+              <button
+                type="submit"
+                className="btn-whitelist-submit"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  marginTop: '4px',
+                }}
+              >
+                Start Tapping & Claim Spot
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
