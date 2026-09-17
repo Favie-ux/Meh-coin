@@ -23,8 +23,37 @@ export default function HomePage() {
     const saved = localStorage.getItem(STORAGE_KEY_WALLET);
     if (saved) {
       setConnectedWallet(saved);
+    } else if (typeof window !== 'undefined') {
+      // Auto-connect if inside Phantom in-app browser with existing trust
+      const autoCheck = async () => {
+        const sol = (
+          window as unknown as {
+            solana?: {
+              isPhantom?: boolean;
+              connect: (opts?: { onlyIfTrusted?: boolean }) => Promise<{
+                publicKey: { toString: () => string };
+              }>;
+            };
+          }
+        ).solana;
+
+        if (sol?.isPhantom) {
+          try {
+            const resp = await sol.connect({ onlyIfTrusted: true });
+            if (resp?.publicKey) {
+              handleConnectWallet(resp.publicKey.toString());
+            }
+          } catch {
+            // Not yet trusted
+          }
+        }
+      };
+      autoCheck();
+      const t = setTimeout(autoCheck, 400);
+      return () => clearTimeout(t);
     }
   }, []);
+
 
   const handleConnectWallet = (address: string) => {
     setConnectedWallet(address);
