@@ -20,11 +20,38 @@ export default function HomePage() {
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
 
   useEffect(() => {
+    // 1. Check for URL sync parameters from external app/wallet redirect
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlWallet = params.get('connected_wallet') || params.get('wallet');
+      const urlUser = params.get('user') || params.get('username');
+      const urlScore = params.get('score');
+
+      if (urlWallet && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(urlWallet)) {
+        setConnectedWallet(urlWallet);
+        localStorage.setItem(STORAGE_KEY_WALLET, urlWallet);
+
+        if (urlUser) {
+          localStorage.setItem('meh_tap_username', urlUser.slice(0, 20));
+        }
+        if (urlScore) {
+          const s = parseInt(urlScore, 10);
+          if (!isNaN(s) && s > 0) {
+            localStorage.setItem('meh_tap_score', String(s));
+          }
+        }
+        // Clean query parameters from address bar without reloading
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+    }
+
+    // 2. Read local storage
     const saved = localStorage.getItem(STORAGE_KEY_WALLET);
     if (saved) {
       setConnectedWallet(saved);
     } else if (typeof window !== 'undefined') {
-      // Auto-connect if inside Phantom in-app browser with existing trust
+      // 3. Auto-connect if inside Phantom in-app browser with existing trust
       const autoCheck = async () => {
         const sol = (
           window as unknown as {

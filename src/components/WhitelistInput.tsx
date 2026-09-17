@@ -33,6 +33,19 @@ export default function WhitelistInput({ connectedWallet }: WhitelistInputProps)
     }
   }, []);
 
+  // When a wallet is connected, automatically populate and confirm whitelist spot if empty
+  useEffect(() => {
+    if (connectedWallet && !address) {
+      setAddress(connectedWallet);
+      localStorage.setItem(STORAGE_KEY_WHITELIST, connectedWallet);
+      setFeedback({
+        text: `✓ Connected wallet registered: ${connectedWallet.slice(0, 4)}...${connectedWallet.slice(-4)} — Whitelist spot confirmed!`,
+        type: 'success',
+      });
+    }
+  }, [connectedWallet, address]);
+
+
   const isValidSolanaAddress = (addr: string) => {
     if (!addr || addr.length < 32 || addr.length > 44) return false;
     return /^[1-9A-HJ-NP-Za-km-z]+$/.test(addr);

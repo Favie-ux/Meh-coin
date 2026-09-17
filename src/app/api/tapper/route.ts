@@ -16,19 +16,20 @@ export interface TapperPlayer {
 // In-memory cache
 let inMemoryPlayers: TapperPlayer[] = [];
 
-function getStoragePath(): string {
-  // Use /tmp in serverless/Vercel or local data dir in development
-  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-    return path.join('/tmp', 'meh_tappers.json');
-  }
+function getLocalDataPath(): string {
   return path.join(process.cwd(), 'data', 'tappers.json');
 }
 
+function getTmpDataPath(): string {
+  return path.join('/tmp', 'meh_tappers.json');
+}
+
 function loadPlayers(): TapperPlayer[] {
+  // 1. Try local data file first (persistent on disk)
   try {
-    const filePath = getStoragePath();
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf-8');
+    const localPath = getLocalDataPath();
+    if (fs.existsSync(localPath)) {
+      const data = fs.readFileSync(localPath, 'utf-8');
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed)) {
         inMemoryPlayers = parsed;
@@ -36,28 +37,74 @@ function loadPlayers(): TapperPlayer[] {
       }
     }
   } catch {
-    // If file read fails, fall back to in-memory store
+    // Ignore and try fallback
   }
+
+  // 2. Try /tmp backup mirror
+  try {
+    const tmpPath = getTmpDataPath();
+    if (fs.existsSync(tmpPath)) {
+      const data = fs.readFileSync(tmpPath, 'utf-8');
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        inMemoryPlayers = parsed;
+        return inMemoryPlayers;
+      }
+    }
+  } catch {
+    // Memory fallback
+  }
+
   return inMemoryPlayers;
 }
 
 function savePlayers(players: TapperPlayer[]) {
   inMemoryPlayers = players;
+  const jsonString = JSON.stringify(players, null, 2);
+
+  // Write to local data directory
   try {
-    const filePath = getStoragePath();
-    const dir = path.dirname(filePath);
+    const localPath = getLocalDataPath();
+    const dir = path.dirname(localPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    fs.writeFileSync(filePath, JSON.stringify(players, null, 2), 'utf-8');
+    fs.writeFileSync(localPath, jsonString, 'utf-8');
   } catch {
-    // File write fallback
+    // Read-only filesystem fallback
+  }
+
+  // Mirror to /tmp for serverless container survival
+  try {
+    const tmpPath = getTmpDataPath();
+    fs.writeFileSync(tmpPath, jsonString, 'utf-8');
+  } catch {
+    // Ignore
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const queryWallet = url.searchParams.get('wallet');
+  const queryUsername = url.searchParams.get('username');
+
   const players = loadPlayers().sort((a, b) => b.score - a.score);
-  return NextResponse.json({ players });
+
+  // If client wants to find their specific profile
+  let foundPlayer: TapperPlayer | undefined;
+  if (queryWallet) {
+    foundPlayer = players.find((p) => p.wallet === queryWallet);
+  }
+  if (!foundPlayer && queryUsername) {
+    foundPlayer = players.find(
+      (p) => p.name.toLowerCase() === queryUsername.trim().toLowerCase()
+    );
+  }
+
+  return NextResponse.json({
+    players,
+    profile: foundPlayer || null,
+  });
 }
 
 export async function POST(request: Request) {
@@ -81,15 +128,23 @@ export async function POST(request: Request) {
         : undefined;
 
     const players = loadPlayers();
-    const existingIndex = players.findIndex(
-      (p) => p.name.toLowerCase() === cleanName.toLowerCase()
-    );
+
+    // Match by wallet address FIRST, or by username
+    const existingIndex = players.findIndex((p) => {
+      if (safeWallet && p.wallet && p.wallet === safeWallet) return true;
+      return p.name.toLowerCase() === cleanName.toLowerCase();
+    });
 
     const safeScore = Math.min(10000000, Math.max(0, parseInt(String(score || 0), 10) || 0));
 
     if (existingIndex !== -1) {
-      // Update existing player with highest score and optional wallet
+      // Retain the higher score
       players[existingIndex].score = Math.max(players[existingIndex].score, safeScore);
+      // Update name if cleanName provided
+      if (cleanName) {
+        players[existingIndex].name = cleanName;
+      }
+      // Link wallet if provided
       if (safeWallet) {
         players[existingIndex].wallet = safeWallet;
       }

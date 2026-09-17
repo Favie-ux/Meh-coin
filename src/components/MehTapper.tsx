@@ -67,7 +67,7 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
   const lastRankRef = useRef<number>(999);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch real players from the backend API
+  // Fetch real players from the backend API & auto-restore user profile
   const fetchLivePlayers = useCallback(async () => {
     try {
       const res = await fetch('/api/tapper');
@@ -75,6 +75,29 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
         const data = await res.json();
         if (Array.isArray(data.players)) {
           setRealPlayers(data.players);
+
+          // Find current user's profile on server by wallet or username
+          const localUser = localStorage.getItem(STORAGE_KEY_USERNAME);
+          const localWallet = localStorage.getItem('meh_connected_wallet');
+
+          const matched = data.players.find(
+            (p: PlayerEntry) =>
+              (localWallet && p.wallet && p.wallet === localWallet) ||
+              (localUser && p.name.toLowerCase() === localUser.toLowerCase())
+          );
+
+          if (matched) {
+            setScore((prevScore) => {
+              const highest = Math.max(prevScore, matched.score);
+              localStorage.setItem(STORAGE_KEY_SCORE, String(highest));
+              return highest;
+            });
+
+            if (!localUser && matched.name) {
+              setUsername(matched.name);
+              localStorage.setItem(STORAGE_KEY_USERNAME, matched.name);
+            }
+          }
         }
       }
     } catch {
@@ -109,6 +132,26 @@ export default function MehTapper({ onOpenWallet, connectedWallet }: MehTapperPr
     },
     []
   );
+
+  // When connectedWallet changes, check for existing profile or link score
+  useEffect(() => {
+    if (!connectedWallet) return;
+
+    const matched = realPlayers.find((p) => p.wallet === connectedWallet);
+    if (matched) {
+      if (matched.score > score) {
+        setScore(matched.score);
+        localStorage.setItem(STORAGE_KEY_SCORE, String(matched.score));
+      }
+      if (!username && matched.name) {
+        setUsername(matched.name);
+        localStorage.setItem(STORAGE_KEY_USERNAME, matched.name);
+      }
+    } else if (username && score > 0) {
+      syncScoreToServer(username, score, connectedWallet);
+    }
+  }, [connectedWallet, realPlayers, score, username, syncScoreToServer]);
+
 
   // Initialize state from localStorage & clean up any stale mock names
   useEffect(() => {

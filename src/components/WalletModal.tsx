@@ -247,6 +247,15 @@ export default function WalletModal({
               Connect your Solana wallet to link your Meh Tap score and verify airdrop eligibility.
             </p>
 
+            {isMobile && (
+              <div className="mobile-wallet-guidance">
+                <span className="mobile-guidance-icon">💡</span>
+                <div className="mobile-guidance-text">
+                  <strong>Mobile Chrome Tip:</strong> Mobile browsers cannot directly run extensions. You can either <strong>paste your Solana address</strong> in the &ldquo;Paste Address&rdquo; tab for instant connection in Chrome, or tap <strong>Phantom</strong> to open in Phantom&apos;s Web3 app.
+                </div>
+              </div>
+            )}
+
             {/* Mode Switcher */}
             <div className="wallet-tab-group">
               <button
@@ -408,6 +417,32 @@ export default function WalletModal({
                   {parseInt(tapScore, 10).toLocaleString()} points
                 </strong>
               </div>
+            </div>
+
+            {/* Cross-Browser Sync Button (ideal when connected inside Phantom or on mobile) */}
+            <div className="wallet-sync-box">
+              <div className="wallet-sync-info">
+                <span className="sync-title">Using Chrome or Safari?</span>
+                <span className="sync-desc">
+                  Tap below to open this session in your phone&apos;s default browser with your wallet and score synced.
+                </span>
+              </div>
+              <button
+                type="button"
+                className="btn-sync-browser"
+                onClick={() => {
+                  const url = new URL(window.location.origin);
+                  url.searchParams.set('connected_wallet', connectedWallet);
+                  const u = localStorage.getItem('meh_tap_username');
+                  if (u) url.searchParams.set('user', u);
+                  const s = localStorage.getItem('meh_tap_score');
+                  if (s) url.searchParams.set('score', s);
+                  window.open(url.toString(), '_blank');
+                  showToast('Opening synced session in browser...');
+                }}
+              >
+                Sync &amp; Open in Chrome / Safari ↗
+              </button>
             </div>
 
             <button
