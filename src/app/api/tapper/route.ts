@@ -66,23 +66,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Username is required' }, { status: 400 });
     }
 
-    const cleanName = username.trim().slice(0, 20);
+    const cleanName = username.trim().replace(/[^a-zA-Z0-9_@.-]/g, '').slice(0, 20);
     if (!cleanName) {
       return NextResponse.json({ error: 'Invalid username' }, { status: 400 });
     }
+
+    // Sanitize wallet format if provided
+    const safeWallet =
+      typeof wallet === 'string' && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(wallet.trim())
+        ? wallet.trim()
+        : undefined;
 
     const players = loadPlayers();
     const existingIndex = players.findIndex(
       (p) => p.name.toLowerCase() === cleanName.toLowerCase()
     );
 
-    const safeScore = Math.max(0, parseInt(String(score || 0), 10));
+    const safeScore = Math.min(10000000, Math.max(0, parseInt(String(score || 0), 10) || 0));
 
     if (existingIndex !== -1) {
       // Update existing player with highest score and optional wallet
       players[existingIndex].score = Math.max(players[existingIndex].score, safeScore);
-      if (wallet) {
-        players[existingIndex].wallet = wallet;
+      if (safeWallet) {
+        players[existingIndex].wallet = safeWallet;
       }
       players[existingIndex].updatedAt = Date.now();
     } else {
@@ -91,7 +97,7 @@ export async function POST(request: Request) {
         id: `p_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         name: cleanName,
         score: safeScore,
-        wallet: wallet || undefined,
+        wallet: safeWallet,
         updatedAt: Date.now(),
       });
     }

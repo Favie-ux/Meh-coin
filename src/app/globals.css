@@ -1206,37 +1206,44 @@ input {
 .countdown-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 20px;
 }
 
 .countdown-item {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 14px 6px;
+  background: linear-gradient(180deg, rgba(26, 26, 32, 0.85) 0%, rgba(14, 14, 18, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 16px 8px 12px;
   text-align: center;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.countdown-item:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
 }
 
 .countdown-number {
   display: block;
   font-family: var(--font-mono);
-  font-size: clamp(24px, 3.2vw, 32px);
-  font-weight: 800;
+  font-size: clamp(28px, 3.8vw, 38px);
+  font-weight: 900;
   line-height: 1;
-  color: var(--accent-white);
-  letter-spacing: -1px;
-  text-shadow: 0 0 16px rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.35);
 }
 
 .countdown-label {
   display: block;
   font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
   margin-top: 6px;
 }
 
@@ -2393,7 +2400,8 @@ input {
 
 .chart-stats-row {
   display: flex;
-  gap: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
   font-family: var(--font-mono);
   font-size: 12px;
 }
@@ -2995,11 +3003,28 @@ input {
     align-items: flex-start;
     gap: 10px;
   }
+  .countdown-grid {
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .countdown-item {
+    padding: 12px 4px 10px;
+    border-radius: 8px;
+    background: rgba(14, 14, 18, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+  }
   .countdown-number {
-    font-size: 20px;
+    font-size: clamp(24px, 6.5vw, 30px);
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 0 16px rgba(255, 255, 255, 0.35);
   }
   .countdown-label {
     font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    margin-top: 4px;
+    color: var(--text-secondary);
   }
   .ca-container {
     flex-direction: column;
@@ -3017,17 +3042,39 @@ input {
   .btn-wallet .wallet-label {
     font-size: 11px;
   }
-  .tapper-points-val {
-    font-size: 34px;
-  }
   .tapper-header-bar {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 16px 12px;
+  }
+  .tapper-points-display {
+    align-items: center;
+    text-align: center;
+    width: 100%;
+  }
+  .tapper-points-label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+  .tapper-points-val {
+    font-size: clamp(40px, 11vw, 54px);
+    font-weight: 900;
+    line-height: 1;
+    color: #ffffff;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.4), 0 0 36px rgba(20, 241, 149, 0.25);
+  }
+  .tapper-tier-badge {
+    font-size: 11px;
+    padding: 5px 14px;
+    margin-top: 2px;
   }
   .meh-coin-btn {
-    width: min(230px, 72vw);
-    height: min(230px, 72vw);
+    width: min(240px, 74vw);
+    height: min(240px, 74vw);
   }
   .footer-bottom {
     flex-direction: column;
@@ -3047,6 +3094,10 @@ input {
 @media (max-width: 360px) {
   .countdown-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .countdown-number {
+    font-size: 26px;
   }
   .brand-logo {
     font-size: 20px;
