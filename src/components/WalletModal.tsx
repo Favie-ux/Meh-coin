@@ -28,6 +28,14 @@ export default function WalletModal({
   const [hasSolflare, setHasSolflare] = useState(false);
   const [solBalance, setSolBalance] = useState<string | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(false);
+  const [pendingSession, setPendingSession] = useState<string | null>(null);
+
+  // Check pending session on open
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setPendingSession(localStorage.getItem('meh_pending_session'));
+    }
+  }, [isOpen]);
 
   // Check providers and mobile environment
   useEffect(() => {
@@ -126,14 +134,31 @@ export default function WalletModal({
       }
     }
 
-    // 2. Mobile outside Phantom (Safari / Chrome Mobile) -> Deep Link directly into Phantom In-App Browser
+    // 2. Mobile outside Phantom (Safari / Chrome Mobile) -> Deep Link directly into Phantom In-App Browser with DB Pairing Session!
     if (isMobile) {
-      showToast('Opening in Phantom mobile app...');
-      const cleanUrl = window.location.href.split('#')[0];
+      showToast('Opening in Phantom app...');
+      const cleanUrl = window.location.href.split('#')[0].split('?')[0];
       const ref = window.location.origin;
+      const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+      // Register session in persistent database
+      try {
+        await fetch('/api/wallet-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, status: 'pending' }),
+        });
+      } catch {
+        // Ignore network errors
+      }
+
+      localStorage.setItem('meh_pending_session', sessionId);
+      setPendingSession(sessionId);
+
       const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(
-        cleanUrl
+        `${cleanUrl}?session=${sessionId}`
       )}?ref=${encodeURIComponent(ref)}`;
+
       window.location.href = phantomDeepLink;
       return;
     }
@@ -172,14 +197,30 @@ export default function WalletModal({
       }
     }
 
-    // 2. Mobile outside Solflare -> Deep Link directly into Solflare In-App Browser
+    // 2. Mobile outside Solflare -> Deep Link directly into Solflare In-App Browser with DB Pairing Session!
     if (isMobile) {
       showToast('Opening in Solflare mobile app...');
-      const cleanUrl = window.location.href.split('#')[0];
+      const cleanUrl = window.location.href.split('#')[0].split('?')[0];
       const ref = window.location.origin;
+      const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+      try {
+        await fetch('/api/wallet-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, status: 'pending' }),
+        });
+      } catch {
+        // Ignore
+      }
+
+      localStorage.setItem('meh_pending_session', sessionId);
+      setPendingSession(sessionId);
+
       const solflareDeepLink = `https://solflare.com/ul/v1/browse/${encodeURIComponent(
-        cleanUrl
+        `${cleanUrl}?session=${sessionId}`
       )}?ref=${encodeURIComponent(ref)}`;
+
       window.location.href = solflareDeepLink;
       return;
     }
@@ -247,11 +288,22 @@ export default function WalletModal({
               Connect your Solana wallet to link your Meh Tap score and verify airdrop eligibility.
             </p>
 
-            {isMobile && (
+            {/* Pending pairing session indicator */}
+            {pendingSession && (
+              <div className="pending-session-banner">
+                <div className="pending-spinner"></div>
+                <div className="pending-session-text">
+                  <strong>Waiting for Phantom approval...</strong>
+                  <span>Connect in Phantom, then switch back to Chrome. Chrome connects automatically!</span>
+                </div>
+              </div>
+            )}
+
+            {isMobile && !pendingSession && (
               <div className="mobile-wallet-guidance">
                 <span className="mobile-guidance-icon">💡</span>
                 <div className="mobile-guidance-text">
-                  <strong>Mobile Chrome Tip:</strong> Mobile browsers cannot directly run extensions. You can either <strong>paste your Solana address</strong> in the &ldquo;Paste Address&rdquo; tab for instant connection in Chrome, or tap <strong>Phantom</strong> to open in Phantom&apos;s Web3 app.
+                  <strong>Mobile Chrome Tip:</strong> Tap <strong>Phantom</strong> to launch the Phantom app, then simply return to Chrome. Or paste your address in &ldquo;Paste Address&rdquo; for instant local connect.
                 </div>
               </div>
             )}
